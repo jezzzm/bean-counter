@@ -37,8 +37,8 @@ export interface Roaster {
 }
 
 export interface MutateSetting {
-  modelId?: number;
-  beanId?: number;
+  modelId: number;
+  beanId: number;
   dose: number;
   grindSize: string;
   basket: 'single' | 'double';

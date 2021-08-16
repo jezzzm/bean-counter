@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import { useQuery } from 'react-query';
 import { QueryBean, QueryModel, MutateSetting } from '../types';
 
-const isCompleteSetting = (setting: MutateSetting): setting is MutateSetting => {
+const isCompleteSetting = (
+  setting: MutateSetting
+): setting is MutateSetting => {
   return !!(
-    setting.beanId  && setting.beanId > 0 &&
-    setting.modelId && setting.modelId > 0 &&
+    setting.beanId &&
+    setting.beanId > 0 &&
+    setting.modelId &&
+    setting.modelId > 0 &&
     setting.dose > 0 &&
     setting.grindSize &&
     setting.basket
@@ -16,9 +20,9 @@ const initialNewSetting: MutateSetting = {
   dose: 18,
   grindSize: '',
   basket: 'double',
-  modelId: undefined,
-  beanId: undefined,
-  comment: undefined,
+  modelId: -1,
+  beanId: -1,
+  comment: '',
 };
 
 type Props = {
@@ -26,15 +30,14 @@ type Props = {
 };
 
 const NewSetting: React.FC<Props> = ({ onSubmit }) => {
-  const [newSetting, setNewSetting] = useState<MutateSetting>(initialNewSetting);
+  const [newSetting, setNewSetting] =
+    useState<MutateSetting>(initialNewSetting);
 
-    const { data: beans = [] } = useQuery<QueryBean[]>('beans', () =>
+  const { data: beans = [] } = useQuery<QueryBean[]>('beans', () =>
     fetch('http://localhost:3001/beans').then((res) => res.json())
-    );
-  
-    const {
-    data: grinders = [],
-  } = useQuery<QueryModel[]>('grinders', () =>
+  );
+
+  const { data: grinders = [] } = useQuery<QueryModel[]>('grinders', () =>
     fetch('http://localhost:3001/grinders').then((res) => res.json())
   );
 
@@ -43,14 +46,18 @@ const NewSetting: React.FC<Props> = ({ onSubmit }) => {
   }: {
     target: HTMLInputElement | HTMLSelectElement;
   }) => {
+    const value = ['dose', 'modelId', 'beanId'].includes(target.name)
+      ? Number(target.value)
+      : target.value;
+
     setNewSetting((existing) => ({
       ...existing,
-      [target.name]: target.value,
+      [target.name]: value,
     }));
   };
 
   const addNewSetting = () => {
-    const withDoseAsNumber = {...newSetting, dose: Number(newSetting.dose)}
+    const withDoseAsNumber = { ...newSetting, dose: Number(newSetting.dose) };
     if (isCompleteSetting(withDoseAsNumber)) {
       onSubmit(withDoseAsNumber);
       setNewSetting(initialNewSetting);
@@ -60,28 +67,31 @@ const NewSetting: React.FC<Props> = ({ onSubmit }) => {
   return (
     <div className="app-form">
       <h3>New Setting</h3>
-    <select
-      value={newSetting.beanId}
-      onChange={handleNewSettingChange}
-      name="beanId"
-    >
-      {beans.map((bean) => (
-        <option key={`new-setting-${bean.id}-${bean.name}`} value={bean.id}>
-          {bean.roasterName} {bean.name}
-        </option>
-      ))}
-    </select>
-    <select
-      value={newSetting.modelId}
-      onChange={handleNewSettingChange}
-      name="modelId"
-    >
-      {grinders.map((model) => (
-        <option key={`new-setting-${model.id}-${model.name}`} value={model.id}>
-          {model.makeName} {model.name}
-        </option>
-      ))}
-    </select>
+      <select
+        value={newSetting.beanId}
+        onChange={handleNewSettingChange}
+        name="beanId"
+      >
+        {beans.map((bean) => (
+          <option key={`new-setting-${bean.id}-${bean.name}`} value={bean.id}>
+            {bean.roasterName} {bean.name}
+          </option>
+        ))}
+      </select>
+      <select
+        value={newSetting.modelId}
+        onChange={handleNewSettingChange}
+        name="modelId"
+      >
+        {grinders.map((model) => (
+          <option
+            key={`new-setting-${model.id}-${model.name}`}
+            value={model.id}
+          >
+            {model.makeName} {model.name}
+          </option>
+        ))}
+      </select>
       <input
         value={newSetting.dose}
         type="number"
