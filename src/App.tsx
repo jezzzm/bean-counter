@@ -1,23 +1,14 @@
 import React from 'react';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useMutation, useQueryClient } from 'react-query';
 import './app.css';
 import SettingsTable from './components/settings-table';
 import NewBean from './components/new-bean';
 import NewGrinder from './components/new-grinder';
-import {
-  MutateBean,
-  MutateModel,
-  QueryBean,
-  QueryModel,
-  QuerySetting,
-} from './types';
+import { MutateBean, MutateModel, MutateSetting, QueryBean, QueryModel, QuerySetting } from './types';
+import NewSetting from './components/new-setting';
 
 function App() {
   const queryClient = useQueryClient();
-
-  const { data: settings = [] } = useQuery<QuerySetting[]>('settings', () =>
-    fetch('http://localhost:3001/settings').then((res) => res.json())
-  );
 
   const mutateGrinder = useMutation<QueryModel, unknown, MutateModel>(
     (grinder) =>
@@ -28,8 +19,8 @@ function App() {
     {
       mutationKey: 'addGrinder',
       onSuccess: () => {
-        queryClient.invalidateQueries('grinders')
-      }
+        queryClient.invalidateQueries('grinders');
+      },
     }
   );
 
@@ -41,10 +32,26 @@ function App() {
       }).then((res) => res.json()),
     {
       mutationKey: 'addBean',
-            onSuccess: () => {
-        queryClient.invalidateQueries('beans')
-        queryClient.invalidateQueries('roasters')
-      }
+      onSuccess: () => {
+        queryClient.invalidateQueries('beans');
+        queryClient.invalidateQueries('roasters');
+      },
+    }
+  );
+  const mutateSetting = useMutation<QuerySetting, unknown, MutateSetting>(
+    (setting) =>
+      fetch('http://localhost:3001/setting', {
+        method: 'post',
+        body: JSON.stringify(setting),
+      }).then((res) => res.json()),
+    {
+      mutationKey: 'addBean',
+      onSuccess: () => {
+        queryClient.invalidateQueries('settings');
+        queryClient.invalidateQueries('beans');
+        queryClient.invalidateQueries('grinders');
+        queryClient.invalidateQueries('roasters');
+      },
     }
   );
 
@@ -55,10 +62,11 @@ function App() {
           <div className="app-forms-container">
             <NewGrinder onSubmit={mutateGrinder.mutate} />
             <NewBean onSubmit={mutateBean.mutate} />
+            <NewSetting onSubmit={mutateSetting.mutate} />
           </div>
         </header>
         <div className="tables-container">
-          <SettingsTable settings={settings} />
+          <SettingsTable />
         </div>
       </div>
     </div>

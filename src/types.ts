@@ -46,5 +46,8 @@ export interface MutateSetting {
 }
 
 export interface QuerySetting extends MutateSetting {
+  id: number;
   updatedAt: string;
+  bean: QueryBean;
+  grinder: QueryModel;
 }
