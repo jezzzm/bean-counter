@@ -1,31 +1,38 @@
 import React, { useState } from 'react';
-import { Grinder, MyGrinder } from '../app';
+import { useQuery } from 'react-query';
+import { MutateModel, QueryModel } from '../types';
 
-type AnyString<T> = { [P in keyof T]: string };
-
-const isCompleteGrinder = (
-  grinder: AnyString<MyGrinder>
-): grinder is MyGrinder => {
-  const cast = grinder as MyGrinder;
-  return !!(cast.model && cast.make && cast.datePurchased && cast.nickname);
+const isCompleteGrinder = (grinder: MutateModel): grinder is MutateModel => {
+  return !!(grinder.makeName && grinder.name);
 };
 
-const initialNewGrinder = {
-  nickname: '',
-  make: '',
-  model: '',
-  date: '',
-  datePurchased: '',
+const isUniqueGrinder = (grinder: MutateModel, allGrinders: MutateModel[]) => {
+  return (
+    allGrinders.filter(
+      ({ name, makeName }) =>
+        makeName === grinder.makeName && grinder.name === name
+    ).length > 0
+  );
+};
+
+const initialNewGrinder: MutateModel = {
+  makeName: '',
+  name: '',
 };
 
 type Props = {
-  onSubmit: (newGrinder: MyGrinder) => void;
-  grinders: Grinder[];
+  onSubmit: (newGrinder: MutateModel) => void;
 };
 
-const NewGrinder: React.FC<Props> = ({ onSubmit, grinders }) => {
-  const [newGrinder, setNewGrinder] =
-    useState<AnyString<MyGrinder>>(initialNewGrinder);
+const NewGrinder: React.FC<Props> = ({ onSubmit }) => {
+  const [newGrinder, setNewGrinder] = useState<MutateModel>(initialNewGrinder);
+  const {
+    isError,
+    isLoading,
+    data: grinders = [],
+  } = useQuery<QueryModel[]>('grinders', () =>
+    fetch('http://localhost:3001/grinders').then((res) => res.json())
+  );
 
   const handleNewGrinderChange = ({
     target,
@@ -39,7 +46,10 @@ const NewGrinder: React.FC<Props> = ({ onSubmit, grinders }) => {
   };
 
   const addNewGrinder = () => {
-    if (isCompleteGrinder(newGrinder)) {
+    if (
+      isCompleteGrinder(newGrinder) &&
+      isUniqueGrinder(newGrinder, grinders)
+    ) {
       onSubmit(newGrinder);
       setNewGrinder(initialNewGrinder);
     }
@@ -48,60 +58,54 @@ const NewGrinder: React.FC<Props> = ({ onSubmit, grinders }) => {
   return (
     <div className="app-form">
       <h3>New Grinder</h3>
-      <input
-        value={newGrinder.nickname}
-        name="nickname"
-        onChange={handleNewGrinderChange}
-        placeholder="Nickname"
-      />
-      <select
-        value={newGrinder.make}
-        onChange={handleNewGrinderChange}
-        name="make"
-      >
-        <option value={undefined}>Select Make</option>
-        {grinders
-          .map((grinder) => grinder.make)
-          .filter((val, index, self) => self.indexOf(val) === index)
-          .sort()
-          .map((make) => (
-            <option key={make} value={make}>
-              {make}
-            </option>
-          ))}
-      </select>
-      <select
-        value={newGrinder.model}
-        onChange={handleNewGrinderChange}
-        name="model"
-      >
-        <option value={undefined}>Select Model</option>
-        {grinders
-          .filter((grinder) => grinder.make === newGrinder.make)
-          .map((grinder) => grinder.model)
-          .sort()
-          .map((model) => (
-            <option key={model} value={model}>
-              {model}
-            </option>
-          ))}
-      </select>
-      <input
-        value={newGrinder.datePurchased}
-        type="date"
-        name="datePurchased"
-        onChange={handleNewGrinderChange}
-        placeholder="datePurchased"
-      />
-
-      <button
-        type="button"
-        onClick={addNewGrinder}
-        className="app-form-submit"
-        disabled={!isCompleteGrinder(newGrinder)}
-      >
-        Add Grinder
-      </button>
+      {(() => {
+        if (isLoading) {
+          return 'Loading...';
+        }
+        if (isError) {
+          return 'Error...';
+        }
+        return (
+          <>
+            <select
+              value={newGrinder.makeName}
+              onChange={handleNewGrinderChange}
+              name="make"
+            >
+              <option value={undefined}>Select Make</option>
+              {grinders
+                .map((grinder) => grinder.makeName)
+                .filter((val, index, self) => self.indexOf(val) === index)
+                .sort()
+                .map((make) => (
+                  <option key={make} value={make}>
+                    {make}
+                  </option>
+                ))}
+            </select>
+            <input
+              value={newGrinder.name}
+              name="name"
+              onChange={handleNewGrinderChange}
+              placeholder="Name"
+            />
+            <input
+              value={newGrinder.name}
+              name="url"
+              onChange={handleNewGrinderChange}
+              placeholder="Link to product page"
+            />
+            <button
+              type="button"
+              onClick={addNewGrinder}
+              className="app-form-submit"
+              disabled={!isCompleteGrinder(newGrinder)}
+            >
+              Add Grinder
+            </button>
+          </>
+        );
+      })()}
     </div>
   );
 };

@@ -1,33 +1,26 @@
 import React, { useState } from 'react';
-import { Bean, Grinder, MyGrinder } from '../app';
+import { useQuery } from 'react-query';
+import { MutateBean, Roaster } from '../types';
 
-type AnyString<T> = { [P in keyof T]: string };
-
-const isCompleteBean = (bean: Bean): bean is Bean => {
-  return !!(
-    bean.brand &&
-    bean.name &&
-    bean.dose &&
-    bean.grindSize &&
-    bean.basket
-  );
+const isCompleteBean = (bean: MutateBean): bean is MutateBean => {
+  return !!(bean.roasterName && bean.name);
 };
 
-const initialNewBean: Bean = {
-  brand: '',
+const initialNewBean: MutateBean = {
+  roasterName: '',
   name: '',
-  dose: 18,
-  grindSize: '',
-  basket: 'double',
-  comment: '',
+  description: undefined,
 };
 
 type Props = {
-  onSubmit: (newBean: Bean) => void;
+  onSubmit: (newBean: MutateBean) => void;
 };
 
 const NewBean: React.FC<Props> = ({ onSubmit }) => {
-  const [newBean, setNewBean] = useState<Bean>(initialNewBean);
+  const [newBean, setNewBean] = useState<MutateBean>(initialNewBean);
+  const { data: roasters = [] } = useQuery<Roaster[]>('roasters', () =>
+    fetch('http://localhost:3001/roasters').then((res) => res.json())
+  );
 
   const handleNewBeanChange = ({
     target,
@@ -41,9 +34,8 @@ const NewBean: React.FC<Props> = ({ onSubmit }) => {
   };
 
   const addNewBean = () => {
-    const withDoseAsNumber = {...newBean, dose: Number(newBean.dose)}
-    if (isCompleteBean(withDoseAsNumber)) {
-      onSubmit(withDoseAsNumber);
+    if (isCompleteBean(newBean)) {
+      onSubmit(newBean);
       setNewBean(initialNewBean);
     }
   };
@@ -51,48 +43,29 @@ const NewBean: React.FC<Props> = ({ onSubmit }) => {
   return (
     <div className="app-form">
       <h3>New Bean</h3>
-      <input
-        value={newBean.brand}
-        name="brand"
+      <select
+        value={newBean.roasterName}
         onChange={handleNewBeanChange}
-        placeholder="Brand"
-      />
+        name="roasterName"
+      >
+        {roasters.map((roaster) => (
+          <option key={`new-bean-${roaster.name}`} value={roaster.name}>
+            {roaster.name}
+          </option>
+        ))}
+      </select>
       <input
         value={newBean.name}
         name="name"
         onChange={handleNewBeanChange}
-        placeholder="Name"
+        placeholder="Bean Name"
       />
       <input
-        value={newBean.dose}
-        type="number"
-        name="dose"
+        value={newBean.description}
+        name="description"
         onChange={handleNewBeanChange}
-        placeholder="Dose"
+        placeholder="Description"
       />
-      <input
-        value={newBean.grindSize}
-        name="grindSize"
-        onChange={handleNewBeanChange}
-        placeholder="Grind Size"
-      />
-      <select
-        value={newBean.basket}
-        onChange={handleNewBeanChange}
-        name="basket"
-      >
-        <option value="single">Single</option>
-        <option value="double" defaultChecked>
-          Double
-        </option>
-      </select>
-      <input
-        value={newBean.comment}
-        name="comment"
-        onChange={handleNewBeanChange}
-        placeholder="Comment"
-      />
-
       <button
         type="button"
         onClick={addNewBean}

@@ -83,6 +83,14 @@
 
 .my-grinders-table {
   width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+}
+
+.my-grinders-table td,
+.my-grinders-table th {
+  padding: 8px 16px;
+  border: 1px solid rgb(98, 98, 98);
 }
 
 .tables-container {
